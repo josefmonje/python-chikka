@@ -41,9 +41,17 @@ class Chikka(object):
         # check if request_id was passed to this method
         # means a message was received
         # determines message_type, adds other required payload
-        if kwargs.get('request_id'):
+        if kwargs.get('request_id') is not None:
             payload['request_id'] = kwargs.get('request_id')
-            payload['request_cost'] = kwargs.get('request_cost', 'P1.00')
+
+            # if message type is REPLY user is required to supply
+            # the request cost
+            request_cost = kwargs.get('request_cost')
+            if request_cost is not None:
+                payload['request_cost'] = request_cost
+            else:
+                raise NullRequestCostException
+
             payload['message_type'] = 'REPLY'
         else:
             payload['message_type'] = 'SEND'
@@ -52,7 +60,8 @@ class Chikka(object):
         # this can be useful to track messages sent
         # however if message_id does not exist this method
         # will generate a random message id
-        payload['message_id'] = kwargs.get('message_id', os.urandom(16).encode('hex'))
+        payload['message_id'] = kwargs.get('message_id', 
+                                    os.urandom(16).encode('hex'))
 
         payload['message'] = message
 
@@ -65,14 +74,17 @@ class Chikka(object):
         # check if other required fields exists
         client_id = getattr(self, 'client_id', CLIENT_ID)
         if not client_id:
+            print "Error: Your Client ID is required.\n"
             raise NullClientIDException
 
         secret_key = getattr(self, 'secret_key', SECRET_KEY)
         if not secret_key:
+            print "Error: Your Secret Key is required.\n"
             raise NullSecretKeyException
 
         shortcode = getattr(self, 'shortcode', SHORTCODE)
         if not shortcode:
+            print "Error: Your shortcode is required.\n"
             raise NullShortCodeException
 
         payload = {
@@ -98,4 +110,7 @@ class NullSecretKeyException(Exception):
     pass
 
 class NullShortCodeException(Exception):
+    pass
+
+class NullRequestCostException(Exception):
     pass
